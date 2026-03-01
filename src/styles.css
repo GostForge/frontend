@@ -1,0 +1,438 @@
+/* ── Base ──────────────────────────────────────── */
+:root {
+  --bg: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-hover: #252836;
+  --text: #e4e6eb;
+  --text-dim: #9a9daa;
+  --primary: #5b8def;
+  --primary-hover: #4a7de0;
+  --danger: #e74c3c;
+  --danger-hover: #c0392b;
+  --success: #27ae60;
+  --border: #2d3041;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ── Loading ──────────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.1rem;
+  color: var(--text-dim);
+}
+
+/* ── Auth page ────────────────────────────────── */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.logo {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-bar button {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 0.6rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-bar button.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* ── Inputs ───────────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.9rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+}
+
+input[type="file"] {
+  color: var(--text);
+}
+
+/* ── Buttons ──────────────────────────────────── */
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.65rem 1.2rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--bg-hover);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover { background: var(--border); }
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.3rem 0;
+}
+
+.btn-link:hover { text-decoration: underline; }
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-danger:hover { background: var(--danger-hover); }
+
+.btn-danger-sm {
+  background: none;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn-danger-sm:hover { background: var(--danger); color: #fff; }
+
+/* ── Messages ─────────────────────────────────── */
+.error-msg {
+  background: rgba(231, 76, 60, 0.12);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.success-msg {
+  background: rgba(39, 174, 96, 0.12);
+  border: 1px solid rgba(39, 174, 96, 0.3);
+  color: var(--success);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.info-msg {
+  background: rgba(91, 141, 239, 0.12);
+  border: 1px solid rgba(91, 141, 239, 0.3);
+  color: var(--primary);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.status-msg {
+  color: var(--primary);
+  padding: 0.6rem 0;
+  font-size: 0.95rem;
+}
+
+.status-ok {
+  color: var(--success);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.hint {
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  margin-bottom: 0.8rem;
+}
+
+.hint code {
+  background: var(--bg-hover);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* ── Dashboard ────────────────────────────────── */
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.logo-sm {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary);
+  margin-right: 0.5rem;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.nav-tabs button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  transition: all 0.2s;
+}
+
+.nav-tabs button.active {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.nav-tabs button:hover:not(.active) {
+  background: rgba(255,255,255,0.04);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.9rem;
+}
+
+.content {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  width: 100%;
+}
+
+/* ── Section ──────────────────────────────────── */
+.section h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.section h3 {
+  font-size: 1.05rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-dim);
+}
+
+/* ── Convert ──────────────────────────────────── */
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.form-row label {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  min-width: 70px;
+}
+
+.download-btns {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ── PAT ──────────────────────────────────────── */
+.pat-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pat-form input { flex: 1; min-width: 160px; }
+
+.created-token {
+  background: var(--bg-hover);
+  border: 1px solid var(--success);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.token-value {
+  display: block;
+  background: var(--bg);
+  color: var(--primary);
+  padding: 0.6rem 0.8rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+  word-break: break-all;
+}
+
+.pat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.pat-table th,
+.pat-table td {
+  text-align: left;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.pat-table th {
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.pat-table code {
+  background: var(--bg-hover);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* ── Telegram link ────────────────────────────── */
+.link-code {
+  background: var(--bg-hover);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1rem 0;
+}
+
+/* ── Profile ──────────────────────────────────── */
+.profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+}
+
+.profile-row {
+  display: flex;
+  padding: 0.4rem 0;
+  gap: 0.8rem;
+}
+
+.profile-row .label {
+  color: var(--text-dim);
+  min-width: 160px;
+  font-size: 0.9rem;
+}
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 600px) {
+  .topbar { padding: 0.5rem 0.8rem; }
+  .nav-tabs button { padding: 0.4rem 0.5rem; font-size: 0.8rem; }
+  .content { padding: 1rem 0.8rem; }
+  .pat-form { flex-direction: column; }
+  .pat-form input { width: 100%; }
+}
