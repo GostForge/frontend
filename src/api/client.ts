@@ -329,18 +329,18 @@ export async function submitConversion(file: File, outputFormat: string): Promis
   const fd = new FormData();
   fd.append('archive', file);
   fd.append('options', JSON.stringify({ outputFormat, syntaxHighlighting: true }));
-  return request('/api/v1/convert/quick', { method: 'POST', body: fd });
+  return request('/api/v1/conversions', { method: 'POST', body: fd });
 }
 
 export async function getJobStatus(jobId: string): Promise<JobStatus> {
-  return request(`/api/v1/convert/quick/jobs/${jobId}`);
+  return request(`/api/v1/conversions/${jobId}`);
 }
 
 export async function downloadResult(jobId: string, format: string): Promise<{ blob: Blob; filename: string }> {
-  return requestBlob(`/api/v1/convert/quick/jobs/${jobId}/download/${format}`);
+  return requestBlob(`/api/v1/conversions/${jobId}/result`);
 }
 
 export function createSSE(jobId: string): EventSource {
-  const url = `${API_BASE}/api/v1/convert/quick/jobs/${jobId}/stream`;
+  const url = `${API_BASE}/api/v1/conversions/${jobId}/stream`;
   return new EventSource(url, { withCredentials: true });
 }
