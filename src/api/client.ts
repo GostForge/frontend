@@ -139,8 +139,11 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
 
   const res = await fetch(url, { ...opts, headers, credentials: 'include' });
 
+  // Do not intercept 401 on auth endpoints (login/refresh) because 401 there means actual Auth Failure, not an expired JWT.
+  const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/refresh') || path.includes('/auth/telegram');
+
   // Auto-refresh on 401
-  if (res.status === 401 && refreshToken) {
+  if (res.status === 401 && refreshToken && !isAuthEndpoint) {
     const refreshed = await doRefresh();
     if (refreshed) {
       headers['Authorization'] = `Bearer ${accessToken}`;
@@ -155,10 +158,12 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   }
 
   if (res.status === 401) {
-    // No refresh token available
-    clearAuth();
-    if (onAuthExpiredCallback) onAuthExpiredCallback();
-    throw new Error('Session expired, please log in again');
+    // If it's a login attempt, just throw "Invalid credentials"
+    if (!isAuthEndpoint) {
+      clearAuth();
+      if (onAuthExpiredCallback) onAuthExpiredCallback();
+    }
+    throw await buildError(res);
   }
 
   if (!res.ok) throw await buildError(res);
