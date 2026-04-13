@@ -69,6 +69,9 @@ export interface PublicConversionBoard {
   activeJobs: number;
   completedJobs: number;
   failedJobs: number;
+  totalUsers: number;
+  registeredLast24h: number;
+  registeredLast30d: number;
   submittedLast24h: number;
   completedLast24h: number;
   failedLast24h: number;

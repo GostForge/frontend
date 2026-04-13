@@ -15,6 +15,7 @@ interface Props {
 export function AuthPage({ onAuth, error, onError, onLogin, onRegister, telegramInitData }: Props) {
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [busy, setBusy] = useState(false);
+  const [showPulse, setShowPulse] = useState(false);
 
   // Login fields
   const [loginStr, setLoginStr] = useState('');
@@ -62,56 +63,68 @@ export function AuthPage({ onAuth, error, onError, onLogin, onRegister, telegram
 
   return (
     <div className="auth-page">
-      <div className="auth-layout">
-        <div className="auth-card">
-          <h1 className="logo">GostForge</h1>
-          <p className="subtitle">Markdown → ГОСТ DOCX/PDF</p>
+      <div className="auth-shell">
+        <div className="auth-card-wrap">
+          <div className="auth-card">
+            <h1 className="logo">GostForge</h1>
+            <p className="subtitle">Markdown → ГОСТ DOCX/PDF</p>
 
-          {isMiniApp && (
-            <div className="info-msg">
-              📡 Открыто из Telegram. Войдите или зарегистрируйтесь — аккаунт привяжется автоматически.
+            {isMiniApp && (
+              <div className="info-msg">
+                📡 Открыто из Telegram. Войдите или зарегистрируйтесь — аккаунт привяжется автоматически.
+              </div>
+            )}
+
+            <div className="tab-bar">
+              <button className={tab === 'login' ? 'active' : ''} onClick={() => { setTab('login'); onError(''); }}>
+                Вход
+              </button>
+              <button className={tab === 'register' ? 'active' : ''} onClick={() => { setTab('register'); onError(''); }}>
+                Регистрация
+              </button>
             </div>
-          )}
 
-          <div className="tab-bar">
-            <button className={tab === 'login' ? 'active' : ''} onClick={() => { setTab('login'); onError(''); }}>
-              Вход
-            </button>
-            <button className={tab === 'register' ? 'active' : ''} onClick={() => { setTab('register'); onError(''); }}>
-              Регистрация
-            </button>
+            {error && <div className="error-msg">{error}</div>}
+
+            {tab === 'login' ? (
+              <form onSubmit={handleLogin}>
+                <input type="text" placeholder="Логин или email" value={loginStr}
+                  onChange={e => setLoginStr(e.target.value)} required />
+                <input type="password" placeholder="Пароль" value={loginPass}
+                  onChange={e => setLoginPass(e.target.value)} required />
+                <button type="submit" className="btn-primary" disabled={busy}>
+                  {busy ? 'Вход...' : 'Войти'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister}>
+                <input type="text" placeholder="Имя пользователя" value={regUser}
+                  onChange={e => setRegUser(e.target.value)} required />
+                <input type="email" placeholder="Email" value={regEmail}
+                  onChange={e => setRegEmail(e.target.value)} required />
+                <input type="password" placeholder="Пароль" value={regPass}
+                  onChange={e => setRegPass(e.target.value)} required />
+                <input type="text" placeholder="Отображаемое имя (необязательно)" value={regDisplay}
+                  onChange={e => setRegDisplay(e.target.value)} />
+                <button type="submit" className="btn-primary" disabled={busy}>
+                  {busy ? 'Регистрация...' : 'Зарегистрироваться'}
+                </button>
+              </form>
+            )}
           </div>
-
-          {error && <div className="error-msg">{error}</div>}
-
-          {tab === 'login' ? (
-            <form onSubmit={handleLogin}>
-              <input type="text" placeholder="Логин или email" value={loginStr}
-                onChange={e => setLoginStr(e.target.value)} required />
-              <input type="password" placeholder="Пароль" value={loginPass}
-                onChange={e => setLoginPass(e.target.value)} required />
-              <button type="submit" className="btn-primary" disabled={busy}>
-                {busy ? 'Вход...' : 'Войти'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleRegister}>
-              <input type="text" placeholder="Имя пользователя" value={regUser}
-                onChange={e => setRegUser(e.target.value)} required />
-              <input type="email" placeholder="Email" value={regEmail}
-                onChange={e => setRegEmail(e.target.value)} required />
-              <input type="password" placeholder="Пароль" value={regPass}
-                onChange={e => setRegPass(e.target.value)} required />
-              <input type="text" placeholder="Отображаемое имя (необязательно)" value={regDisplay}
-                onChange={e => setRegDisplay(e.target.value)} />
-              <button type="submit" className="btn-primary" disabled={busy}>
-                {busy ? 'Регистрация...' : 'Зарегистрироваться'}
-              </button>
-            </form>
-          )}
         </div>
 
-        <PublicConversionBoard compact />
+        <div className="auth-pulse-toggle">
+          <button type="button" className="btn-secondary" onClick={() => setShowPulse((v) => !v)}>
+            {showPulse ? 'Скрыть пульс проекта' : 'Показать пульс проекта'}
+          </button>
+        </div>
+
+        {showPulse && (
+          <div className="auth-pulse-panel">
+            <PublicConversionBoard compact />
+          </div>
+        )}
       </div>
     </div>
   );

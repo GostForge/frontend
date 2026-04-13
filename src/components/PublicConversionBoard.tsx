@@ -60,6 +60,9 @@ export function PublicConversionBoard({ compact = false }: Props) {
             <Stat title="Активные" value={board.activeJobs} />
             <Stat title="Успешные" value={board.completedJobs} tone="ok" />
             <Stat title="Ошибки" value={board.failedJobs} tone="bad" />
+            <Stat title="Пользователей" value={board.totalUsers} />
+            <Stat title="Регистрации за 24ч" value={board.registeredLast24h} tone="ok" />
+            <Stat title="Регистрации за 30д" value={board.registeredLast30d} tone="ok" />
             <Stat title="За 24ч" value={board.submittedLast24h} />
             <Stat title="Успешно за 24ч" value={board.completedLast24h} tone="ok" />
           </div>
