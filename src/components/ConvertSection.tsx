@@ -10,6 +10,7 @@ import { GPT_PROMPT_EXTENDED_MD } from '../constants/gptPromptExtendedMd';
 
 export function ConvertSection() {
   const [file, setFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const [conversionChain, setConversionChain] = useState<ConversionChain>('MD_TO_DOCX');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
@@ -26,9 +27,13 @@ export function ConvertSection() {
   const uploadHint = markdownMode
     ? 'Загрузите исходный .docx (до 50 MB), получите ZIP с Markdown и assets.'
     : 'Загрузите .md или .zip с Markdown-файлами и картинками (до 50 MB).';
+  const dropZoneTitle = file
+    ? file.name
+    : (markdownMode ? 'Перетащите DOCX-файл сюда' : 'Перетащите MD или ZIP сюда');
 
   const reset = useCallback(() => {
     setFile(null);
+    setDragOver(false);
     setJobId(null);
     setJobChain('MD_TO_DOCX');
     setStatus('');
@@ -40,11 +45,17 @@ export function ConvertSection() {
     if (fileRef.current) fileRef.current.value = '';
   }, []);
 
+  const setSelectedFile = useCallback((candidate: File | null) => {
+    if (!candidate) return;
+    setFile(candidate);
+    setError('');
+  }, []);
+
   const copyPromptTemplate = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(GPT_PROMPT_EXTENDED_MD);
       setCopiedPrompt(true);
-      window.setTimeout(() => setCopiedPrompt(false), 2000);
+      globalThis.setTimeout(() => setCopiedPrompt(false), 2000);
     } catch {
       setError('Не удалось скопировать шаблон в буфер обмена');
     }
@@ -78,6 +89,26 @@ export function ConvertSection() {
       setError(err.message || 'Ошибка отправки');
       setBusy(false);
     }
+  }
+
+  function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSelectedFile(e.target.files?.[0] || null);
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    setSelectedFile(e.dataTransfer.files?.[0] || null);
+  }
+
+  function handleDragOver(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setDragOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setDragOver(false);
   }
 
   function pollJob(id: string) {
@@ -173,29 +204,50 @@ export function ConvertSection() {
       <h2>Конвертация</h2>
       <p className="hint">{uploadHint}</p>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-row">
+      <div className="convert-card">
+        <form onSubmit={handleSubmit} className="convert-form">
           <input
+            id="convert-file-input"
             ref={fileRef}
+            className="file-input-hidden"
             type="file"
             accept={inputAccept}
-            onChange={e => setFile(e.target.files?.[0] || null)}
+            onChange={handleFileInputChange}
           />
-        </div>
+          <label
+            htmlFor="convert-file-input"
+            className={`file-drop-zone ${dragOver ? 'drag-over' : ''} ${file ? 'has-file' : ''}`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            <span className="file-drop-icon">{file ? '✅' : '📦'}</span>
+            <span className="file-drop-title">{dropZoneTitle}</span>
+            <span className="file-drop-hint">
+              {file ? 'Нажмите, чтобы заменить файл' : 'Или нажмите, чтобы выбрать файл с диска'}
+            </span>
+          </label>
 
-        <div className="form-row">
-          <label>Формат:</label>
-          <select value={conversionChain} onChange={e => setConversionChain(e.target.value as ConversionChain)}>
-            <option value="MD_TO_DOCX">Markdown → DOCX</option>
-            <option value="MD_TO_DOCX_TO_PDF">Markdown → DOCX → PDF</option>
-            <option value="DOCX_TO_MD">DOCX → Markdown (ZIP)</option>
-          </select>
-        </div>
+          <div className="form-row form-row-inline">
+            <label htmlFor="conversion-chain">Цепочка:</label>
+            <div className="select-wrap">
+              <select
+                id="conversion-chain"
+                value={conversionChain}
+                onChange={e => setConversionChain(e.target.value as ConversionChain)}
+              >
+                <option value="MD_TO_DOCX">Markdown → DOCX</option>
+                <option value="MD_TO_DOCX_TO_PDF">Markdown → DOCX → PDF</option>
+                <option value="DOCX_TO_MD">DOCX → Markdown (ZIP)</option>
+              </select>
+            </div>
+          </div>
 
-        <button type="submit" className="btn-primary" disabled={!file || busy}>
-          {busy ? 'Конвертация...' : 'Конвертировать'}
-        </button>
-      </form>
+          <button type="submit" className="btn-primary btn-block" disabled={!file || busy}>
+            {busy ? 'Конвертация...' : 'Конвертировать'}
+          </button>
+        </form>
+      </div>
 
       {!markdownMode && (
         <div className="prompt-card">
@@ -214,10 +266,10 @@ export function ConvertSection() {
       {error && <div className="error-msg">{error}</div>}
 
       {warnings.length > 0 && (
-        <div className="warnings-msg" style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 6, padding: '8px 12px', margin: '8px 0' }}>
+        <div className="warnings-msg">
           <strong>⚠️ Предупреждения конвертации:</strong>
-          <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
-            {warnings.map((w, i) => <li key={i}>{w}</li>)}
+          <ul>
+            {warnings.map((w, i) => <li key={`${w}-${i}`}>{w}</li>)}
           </ul>
         </div>
       )}
@@ -247,8 +299,9 @@ export function ConvertSection() {
 }
 
 function statusLabel(s: string, queuePos?: number): string {
+  const queueSuffix = queuePos ? ` (позиция: ${queuePos})` : '';
   const map: Record<string, string> = {
-    PENDING: `⏳ В очереди${queuePos ? ` (позиция: ${queuePos})` : ''}`,
+    PENDING: `⏳ В очереди${queueSuffix}`,
     MERGING_MD: '📝 Объединение Markdown...',
     CONVERTING_DOCX: '📄 Конвертация в DOCX...',
     CONVERTING_PDF: '📑 Конвертация в PDF...',

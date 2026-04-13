@@ -346,10 +346,119 @@ input[type="file"] {
   margin-bottom: 0.8rem;
 }
 
+.form-row-inline {
+  margin-bottom: 0;
+}
+
 .form-row label {
   font-size: 0.9rem;
   color: var(--text-dim);
   min-width: 70px;
+}
+
+.convert-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.4rem;
+}
+
+.convert-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.file-drop-zone {
+  border: 1px dashed rgba(91, 141, 239, 0.5);
+  border-radius: 10px;
+  background: rgba(91, 141, 239, 0.06);
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.file-drop-zone.drag-over {
+  border-color: var(--primary);
+  background: rgba(91, 141, 239, 0.14);
+  transform: translateY(-1px);
+}
+
+.file-drop-zone.has-file {
+  border-color: rgba(39, 174, 96, 0.6);
+  background: rgba(39, 174, 96, 0.08);
+}
+
+.file-drop-icon {
+  font-size: 1.25rem;
+}
+
+.file-drop-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.file-drop-hint {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.select-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-right: 2px solid var(--text-dim);
+  border-bottom: 2px solid var(--text-dim);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
+
+.select-wrap select {
+  width: 100%;
+  appearance: none;
+  padding-right: 2rem;
+}
+
+.btn-block {
+  width: 100%;
+  font-weight: 600;
+  padding: 0.75rem;
+}
+
+.warnings-msg {
+  background: rgba(243, 156, 18, 0.1);
+  border: 1px solid rgba(243, 156, 18, 0.35);
+  color: #f0c060;
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.warnings-msg ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
 }
 
 .download-btns {
