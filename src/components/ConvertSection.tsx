@@ -3,7 +3,6 @@ import {
   submitConversion,
   getJobStatus,
   downloadResult,
-  createSSE,
   type ConversionChain,
 } from '../api/client';
 import { GPT_PROMPT_EXTENDED_MD } from '../constants/gptPromptExtendedMd';
@@ -112,52 +111,7 @@ export function ConvertSection() {
   }
 
   function pollJob(id: string) {
-    // Try SSE first, fall back to polling
-    try {
-      const sse = createSSE(id);
-      let closed = false;
-
-      const cleanup = () => {
-        if (!closed) { closed = true; sse.close(); }
-      };
-
-      sse.addEventListener('completed', () => {
-        setStatus('✅ Готово!');
-        setDownloadReady(true);
-        setBusy(false);
-        // Fetch final status to get warnings
-        getJobStatus(id).then(s => {
-          if (s.warnings?.length) setWarnings(s.warnings);
-        }).catch(() => {});
-        cleanup();
-      });
-
-      sse.addEventListener('failed', (ev) => {
-        const data = JSON.parse((ev as MessageEvent).data);
-        setError(`Ошибка: ${data.errorMessage || 'неизвестная'}`);
-        setStatus('');
-        setBusy(false);
-        cleanup();
-      });
-
-      sse.addEventListener('queued', (ev) => {
-        const data = JSON.parse((ev as MessageEvent).data);
-        setStatus(`В очереди (позиция: ${data.queuePosition ?? '?'})`);
-      });
-
-      sse.addEventListener('status', (ev) => {
-        const data = JSON.parse((ev as MessageEvent).data);
-        setStatus(statusLabel(data.status));
-      });
-
-      sse.onerror = () => {
-        cleanup();
-        // fallback to polling
-        fallbackPoll(id);
-      };
-    } catch {
-      fallbackPoll(id);
-    }
+    fallbackPoll(id);
   }
 
   async function fallbackPoll(id: string) {

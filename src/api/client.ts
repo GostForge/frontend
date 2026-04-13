@@ -282,8 +282,3 @@ export async function downloadResult(jobId: string, format: string): Promise<{ b
 export async function getPublicConversionBoard(limit = 20): Promise<PublicConversionBoard> {
   return request(`/api/v1/conversions/public/board?limit=${encodeURIComponent(String(limit))}`);
 }
-
-export function createSSE(jobId: string): EventSource {
-  const url = `${API_BASE}/api/v1/conversions/${jobId}/stream`;
-  return new EventSource(url, { withCredentials: true });
-}
