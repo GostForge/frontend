@@ -432,11 +432,26 @@ input[type="file"] {
   margin-bottom: 0.8rem;
 }
 
+.public-board-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-bottom: 0.85rem;
+}
+
+.public-board-group-title {
+  margin: 0 0 0.35rem;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .public-board-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0;
 }
 
 .public-board-stat {

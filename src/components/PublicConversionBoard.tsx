@@ -55,16 +55,34 @@ export function PublicConversionBoard({ compact = false }: Props) {
 
       {board && (
         <>
-          <div className="public-board-stats">
-            <Stat title="Всего задач" value={board.totalJobs} />
-            <Stat title="Активные" value={board.activeJobs} />
-            <Stat title="Успешные" value={board.completedJobs} tone="ok" />
-            <Stat title="Ошибки" value={board.failedJobs} tone="bad" />
-            <Stat title="Пользователей" value={board.totalUsers} />
-            <Stat title="Регистрации за 24ч" value={board.registeredLast24h} tone="ok" />
-            <Stat title="Регистрации за 30д" value={board.registeredLast30d} tone="ok" />
-            <Stat title="За 24ч" value={board.submittedLast24h} />
-            <Stat title="Успешно за 24ч" value={board.completedLast24h} tone="ok" />
+          <div className="public-board-groups">
+            <div className="public-board-group">
+              <h4 className="public-board-group-title">Конвертации (всего)</h4>
+              <div className="public-board-stats">
+                <Stat title="Всего задач" value={safeMetric(board.totalJobs)} />
+                <Stat title="Активные" value={safeMetric(board.activeJobs)} />
+                <Stat title="Успешные" value={safeMetric(board.completedJobs)} tone="ok" />
+                <Stat title="Ошибки" value={safeMetric(board.failedJobs)} tone="bad" />
+              </div>
+            </div>
+
+            <div className="public-board-group">
+              <h4 className="public-board-group-title">Конвертации (24ч)</h4>
+              <div className="public-board-stats">
+                <Stat title="Запущено" value={safeMetric(board.submittedLast24h)} />
+                <Stat title="Успешно" value={safeMetric(board.completedLast24h)} tone="ok" />
+                <Stat title="Ошибки" value={safeMetric(board.failedLast24h)} tone="bad" />
+              </div>
+            </div>
+
+            <div className="public-board-group">
+              <h4 className="public-board-group-title">Пользователи</h4>
+              <div className="public-board-stats">
+                <Stat title="Всего пользователей" value={safeMetric(board.totalUsers)} />
+                <Stat title="Новые за 24ч" value={safeMetric(board.registeredLast24h)} tone="ok" />
+                <Stat title="Новые за 30д" value={safeMetric(board.registeredLast30d)} tone="ok" />
+              </div>
+            </div>
           </div>
 
           <div className="public-board-list">
@@ -101,6 +119,10 @@ function Stat({ title, value, tone = 'default' }: { title: string; value: number
       <strong>{value}</strong>
     </div>
   );
+}
+
+function safeMetric(value: number | null | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
 function statusLabel(status: string): string {
