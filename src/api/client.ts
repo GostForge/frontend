@@ -42,7 +42,7 @@ export interface JobStatus {
   jobId: string;
   status: string;
   queuePosition?: number;
-  outputFormat: string;
+  conversionChain: string;
   createdAt: string;
   updatedAt: string;
   errorMessage?: string;
@@ -50,12 +50,12 @@ export interface JobStatus {
   warnings?: string[];
 }
 
-export type ConversionOutputFormat = 'DOCX' | 'PDF' | 'BOTH' | 'MARKDOWN';
+export type ConversionChain = 'MD_TO_DOCX' | 'MD_TO_DOCX_TO_PDF' | 'DOCX_TO_MD';
 
 export interface PublicConversionBoardItem {
   publicId: string;
   status: string;
-  outputFormat: string;
+  conversionChain: string;
   createdAt: string;
   completedAt?: string;
   durationMs?: number;
@@ -357,13 +357,13 @@ export async function unlinkTelegram(): Promise<void> {
 
 export async function submitConversion(
   file: File,
-  outputFormat: ConversionOutputFormat,
+  conversionChain: ConversionChain,
 ): Promise<{ jobId: string; status: string }> {
   const fd = new FormData();
-  const multipartField = outputFormat === 'MARKDOWN' ? 'file' : 'archive';
+  const multipartField = conversionChain === 'DOCX_TO_MD' ? 'file' : 'archive';
   fd.append(multipartField, file, file.name);
-  fd.append('outputFormat', outputFormat);
-  fd.append('options', JSON.stringify({ outputFormat, syntaxHighlighting: true }));
+  fd.append('conversionChain', conversionChain);
+  fd.append('options', JSON.stringify({ conversionChain, syntaxHighlighting: true }));
   return request('/api/v1/conversions', { method: 'POST', body: fd });
 }
 

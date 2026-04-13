@@ -4,33 +4,33 @@ import {
   getJobStatus,
   downloadResult,
   createSSE,
-  type ConversionOutputFormat,
+  type ConversionChain,
 } from '../api/client';
 import { GPT_PROMPT_EXTENDED_MD } from '../constants/gptPromptExtendedMd';
 
 export function ConvertSection() {
   const [file, setFile] = useState<File | null>(null);
-  const [format, setFormat] = useState<ConversionOutputFormat>('DOCX');
+  const [conversionChain, setConversionChain] = useState<ConversionChain>('MD_TO_DOCX');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [jobId, setJobId] = useState<string | null>(null);
-  const [jobFormat, setJobFormat] = useState<ConversionOutputFormat>('DOCX');
+  const [jobChain, setJobChain] = useState<ConversionChain>('MD_TO_DOCX');
   const [downloadReady, setDownloadReady] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const markdownMode = format === 'MARKDOWN';
+  const markdownMode = conversionChain === 'DOCX_TO_MD';
   const inputAccept = markdownMode ? '.docx' : '.zip,.md';
   const uploadHint = markdownMode
     ? 'Загрузите исходный .docx (до 50 MB), получите ZIP с Markdown и assets.'
-    : 'Загрузите .zip с .md файлами и картинками (до 50 MB).';
+    : 'Загрузите .md или .zip с Markdown-файлами и картинками (до 50 MB).';
 
   const reset = useCallback(() => {
     setFile(null);
     setJobId(null);
-    setJobFormat('DOCX');
+    setJobChain('MD_TO_DOCX');
     setStatus('');
     setError('');
     setWarnings([]);
@@ -70,9 +70,9 @@ export function ConvertSection() {
     setDownloadReady(false);
 
     try {
-      const job = await submitConversion(file, format);
+      const job = await submitConversion(file, conversionChain);
       setJobId(job.jobId);
-      setJobFormat(format);
+      setJobChain(conversionChain);
       pollJob(job.jobId);
     } catch (err: any) {
       setError(err.message || 'Ошибка отправки');
@@ -185,11 +185,10 @@ export function ConvertSection() {
 
         <div className="form-row">
           <label>Формат:</label>
-          <select value={format} onChange={e => setFormat(e.target.value as ConversionOutputFormat)}>
-            <option value="DOCX">DOCX</option>
-            <option value="PDF">PDF</option>
-            <option value="BOTH">DOCX + PDF</option>
-            <option value="MARKDOWN">Markdown (ZIP)</option>
+          <select value={conversionChain} onChange={e => setConversionChain(e.target.value as ConversionChain)}>
+            <option value="MD_TO_DOCX">Markdown → DOCX</option>
+            <option value="MD_TO_DOCX_TO_PDF">Markdown → DOCX → PDF</option>
+            <option value="DOCX_TO_MD">DOCX → Markdown (ZIP)</option>
           </select>
         </div>
 
@@ -225,17 +224,17 @@ export function ConvertSection() {
 
       {downloadReady && jobId && (
         <div className="download-btns">
-          {(jobFormat === 'DOCX' || jobFormat === 'BOTH') && (
+          {jobChain === 'MD_TO_DOCX' && (
             <button className="btn-secondary" onClick={() => handleDownload('docx')}>
               📄 Скачать DOCX
             </button>
           )}
-          {(jobFormat === 'PDF' || jobFormat === 'BOTH') && (
+          {jobChain === 'MD_TO_DOCX_TO_PDF' && (
             <button className="btn-secondary" onClick={() => handleDownload('pdf')}>
               📑 Скачать PDF
             </button>
           )}
-          {jobFormat === 'MARKDOWN' && (
+          {jobChain === 'DOCX_TO_MD' && (
             <button className="btn-secondary" onClick={() => handleDownload('zip')}>
               🗂 Скачать ZIP (Markdown + assets)
             </button>

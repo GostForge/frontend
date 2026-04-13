@@ -74,7 +74,7 @@ export function PublicConversionBoard({ compact = false }: Props) {
                 <div className="public-board-item-main">
                   <span className={`badge ${badgeClass(item.status)}`}>{statusLabel(item.status)}</span>
                   <span className="public-board-id">#{item.publicId}</span>
-                  <span className="public-board-format">{item.outputFormat}</span>
+                  <span className="public-board-format">{chainLabel(item.conversionChain)}</span>
                 </div>
                 <div className="public-board-item-meta">
                   <span>Старт: {formatDateTime(item.createdAt)}</span>
@@ -118,6 +118,15 @@ function badgeClass(status: string): string {
   if (status === 'FAILED') return 'badge-bad';
   if (status === 'PENDING') return 'badge-wait';
   return 'badge-run';
+}
+
+function chainLabel(chain: string): string {
+  const map: Record<string, string> = {
+    MD_TO_DOCX: 'MD → DOCX',
+    MD_TO_DOCX_TO_PDF: 'MD → DOCX → PDF',
+    DOCX_TO_MD: 'DOCX → MD',
+  };
+  return map[chain] || chain;
 }
 
 function formatDateTime(iso: string): string {
