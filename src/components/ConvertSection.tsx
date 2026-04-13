@@ -78,6 +78,7 @@ export function ConvertSection() {
     setError('');
     setStatus('Отправка...');
     setDownloadReady(false);
+    setWarnings([]);
 
     try {
       const job = await submitConversion(file, conversionChain);
@@ -122,7 +123,7 @@ export function ConvertSection() {
         setStatus(statusLabel(s.status, s.queuePosition));
         if (s.status === 'COMPLETED') {
           setDownloadReady(true);
-          if (s.warnings?.length) setWarnings(s.warnings);
+          setWarnings(s.warnings ?? []);
           setBusy(false);
           return;
         }
