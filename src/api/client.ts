@@ -1,10 +1,8 @@
 /**
- * GostForge API client with automatic token refresh.
+ * GostForge API client.
  *
- * Access token: kept in memory (not localStorage).
- * Refresh token: stored in Telegram.CloudStorage when in Mini App,
- *                otherwise relies on HttpOnly cookie from backend.
- *                Also kept in memory for explicit refresh calls.
+ * Access token is kept in memory and mirrored to localStorage so the
+ * session survives page reloads without refresh-token endpoints.
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -12,8 +10,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 // ── Token storage (in-memory) ─────────────────────────────
 
 let accessToken: string | null = null;
-let refreshToken: string | null = null;
 let currentUser: User | null = null;
+const ACCESS_TOKEN_KEY = 'gf_access';
 
 export interface User {
   id: string;
@@ -25,7 +23,6 @@ export interface User {
 
 export interface AuthResponse {
   accessToken: string;
-  refreshToken: string;
   user: User;
 }
 
@@ -87,75 +84,38 @@ export function onAuthExpired(cb: () => void) { onAuthExpiredCallback = cb; }
 // ── Getters / setters ─────────────────────────────────────
 
 export function getAccessToken() { return accessToken; }
-export function getRefreshToken() { return refreshToken; }
-export function setRefreshToken(rt: string) { refreshToken = rt; }
 export function getCurrentUser() { return currentUser; }
+
+export function restoreAccessTokenFromStorage(): string | null {
+  try {
+    const stored = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (stored && stored !== 'undefined' && stored !== 'null') {
+      accessToken = stored;
+      return stored;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
 
 export function setAuth(auth: AuthResponse) {
   accessToken = auth.accessToken;
-  refreshToken = auth.refreshToken;
   currentUser = auth.user;
-  if (isMiniApp()) {
-    saveTelegramCloudStorage(auth.refreshToken);
-  } else {
-    try { localStorage.setItem('gf_refresh', auth.refreshToken); } catch { /* ignore */ }
-  }
+  try { localStorage.setItem(ACCESS_TOKEN_KEY, auth.accessToken); } catch { /* ignore */ }
 }
 
 export function clearAuth() {
   accessToken = null;
-  refreshToken = null;
   currentUser = null;
-  clearTelegramCloudStorage();
-  try { localStorage.removeItem('gf_refresh'); } catch { /* ignore */ }
-}
-
-// ── Telegram CloudStorage helpers ─────────────────────────
-
-function isMiniApp(): boolean {
-  return !!(window as any).Telegram?.WebApp?.initData;
-}
-
-function saveTelegramCloudStorage(rt: string) {
-  if (!isMiniApp()) return;
-  try {
-    (window as any).Telegram.WebApp.CloudStorage.setItem('gf_refresh', rt);
-  } catch { /* ignore */ }
-}
-
-function clearTelegramCloudStorage() {
-  if (!isMiniApp()) return;
-  try {
-    (window as any).Telegram.WebApp.CloudStorage.removeItem('gf_refresh');
-  } catch { /* ignore */ }
-}
-
-export function loadRefreshFromCloudStorage(): Promise<string | null> {
-  if (isMiniApp()) {
-    return new Promise((resolve) => {
-      try {
-        (window as any).Telegram.WebApp.CloudStorage.getItem('gf_refresh', (_err: any, val: string) => {
-          resolve(val || null);
-        });
-      } catch {
-        resolve(null);
-      }
-    });
-  }
-  // Regular web — try localStorage
-  try {
-    const val = localStorage.getItem('gf_refresh');
-    return Promise.resolve(val || null);
-  } catch {
-    return Promise.resolve(null);
-  }
+  try { localStorage.removeItem(ACCESS_TOKEN_KEY); } catch { /* ignore */ }
 }
 
 // ── HTTP helpers ──────────────────────────────────────────
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const headers: Record<string, string> = { ...(opts.headers as Record<string, string> || {}) };
+  const headers: Record<string, string> = opts.headers
+    ? { ...(opts.headers as Record<string, string>) }
+    : {};
 
   if (accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
@@ -167,26 +127,8 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
 
   const res = await fetch(url, { ...opts, headers, credentials: 'include' });
 
-  // Do not intercept 401 on auth endpoints (login/refresh) because 401 there means actual Auth Failure, not an expired JWT.
-  const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/refresh') || path.includes('/auth/telegram');
-
-  // Auto-refresh on 401
-  if (res.status === 401 && refreshToken && !isAuthEndpoint) {
-    const refreshed = await doRefresh();
-    if (refreshed) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-      const retry = await fetch(url, { ...opts, headers, credentials: 'include' });
-      if (!retry.ok) throw await buildError(retry);
-      if (retry.status === 204) return null as T;
-      return retry.json();
-    }
-    // Refresh failed — session expired, force logout
-    if (onAuthExpiredCallback) onAuthExpiredCallback();
-    throw new Error('Session expired, please log in again');
-  }
-
   if (res.status === 401) {
-    // If it's a login attempt, just throw "Invalid credentials"
+    const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/register') || path.includes('/auth/telegram');
     if (!isAuthEndpoint) {
       clearAuth();
       if (onAuthExpiredCallback) onAuthExpiredCallback();
@@ -204,19 +146,8 @@ async function requestBlob(path: string): Promise<{ blob: Blob; filename: string
   const headers: Record<string, string> = {};
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
 
-  let res = await fetch(url, { headers, credentials: 'include' });
-
-  // Auto-refresh on 401
-  if (res.status === 401 && refreshToken) {
-    const refreshed = await doRefresh();
-    if (refreshed) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
-      res = await fetch(url, { headers, credentials: 'include' });
-    } else {
-      if (onAuthExpiredCallback) onAuthExpiredCallback();
-      throw new Error('Session expired, please log in again');
-    }
-  } else if (res.status === 401) {
+  const res = await fetch(url, { headers, credentials: 'include' });
+  if (res.status === 401) {
     clearAuth();
     if (onAuthExpiredCallback) onAuthExpiredCallback();
     throw new Error('Session expired, please log in again');
@@ -225,7 +156,7 @@ async function requestBlob(path: string): Promise<{ blob: Blob; filename: string
   if (!res.ok) throw await buildError(res);
 
   const cd = res.headers.get('Content-Disposition') || '';
-  const match = cd.match(/filename="?([^";\s]+)"?/);
+  const match = /filename="?([^";\s]+)"?/.exec(cd);
   const filename = match?.[1] || 'output';
 
   return { blob: await res.blob(), filename };
@@ -240,20 +171,6 @@ async function buildError(res: Response): Promise<Error> {
     msg = res.statusText;
   }
   return new Error(`HTTP ${res.status}: ${msg}`);
-}
-
-async function doRefresh(): Promise<boolean> {
-  try {
-    const body: AuthResponse = await request('/api/v1/auth/refresh', {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken }),
-    });
-    setAuth(body);
-    return true;
-  } catch {
-    clearAuth();
-    return false;
-  }
 }
 
 // ── Auth API ──────────────────────────────────────────────
@@ -289,24 +206,8 @@ export async function login(
   return body;
 }
 
-export async function refresh(): Promise<AuthResponse> {
-  const body = await request<AuthResponse>('/api/v1/auth/refresh', {
-    method: 'POST',
-    body: JSON.stringify({ refreshToken }),
-  });
-  setAuth(body);
-  return body;
-}
-
 export async function logout(): Promise<void> {
-  try {
-    await request('/api/v1/auth/logout', {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken }),
-    });
-  } finally {
-    clearAuth();
-  }
+  clearAuth();
 }
 
 // ── Mini App Auth ─────────────────────────────────────────

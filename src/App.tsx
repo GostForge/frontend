@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  getCurrentUser, getAccessToken, login, register, logout, refresh,
-  miniAppAuth, loadRefreshFromCloudStorage, setAuth, setRefreshToken,
+  getCurrentUser, getAccessToken, login, register, logout,
+  miniAppAuth, setAuth, restoreAccessTokenFromStorage, getProfile,
   onAuthExpired,
   type User, type AuthResponse,
 } from './api/client';
@@ -38,7 +38,7 @@ export function App() {
   useEffect(() => {
     (async () => {
       try {
-        const tg = (window as any).Telegram?.WebApp;
+        const tg = (globalThis as any).Telegram?.WebApp;
         if (tg?.initData) {
           tg.ready();
           tg.expand();
@@ -48,7 +48,7 @@ export function App() {
             handleAuth(auth);
             setLoading(false);
             return;
-          } catch (e: any) {
+          } catch {
             // NOT_LINKED — store initData, show auth form for login/register
             setTelegramInitData(tg.initData);
             // fall through to show auth page
@@ -57,31 +57,21 @@ export function App() {
           return;
         }
 
-        // Try CloudStorage / localStorage refresh token
-        const storedRt = await loadRefreshFromCloudStorage();
-        if (storedRt) {
-          // Load into memory so doRefresh() can use it
-          setRefreshToken(storedRt);
-          try {
-            const auth = await refresh();
-            handleAuth(auth);
-          } catch { /* ignore, show login */ }
+        const hasTokenInMemory = !!getAccessToken();
+        const restoredToken = restoreAccessTokenFromStorage();
+        if (!hasTokenInMemory && !restoredToken) {
           setLoading(false);
           return;
         }
 
-        // Regular web — try silent refresh (cookie might be set)
-        if (getAccessToken()) {
-          setLoading(false);
-          return;
-        }
-
-        // Try silent refresh (cookie might be set)
         try {
-          const auth = await refresh();
-          handleAuth(auth);
-        } catch { /* no session, show login */ }
-      } catch (e: any) {
+          const profile = await getProfile();
+          setUser(profile);
+          setError('');
+        } catch {
+          setUser(null);
+        }
+      } catch (e) {
         console.error('Init error:', e);
       } finally {
         setLoading(false);
