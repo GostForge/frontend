@@ -42,6 +42,15 @@ body {
   padding: 1rem;
 }
 
+.auth-layout {
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: minmax(300px, 420px) minmax(320px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .auth-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -337,6 +346,191 @@ input[type="file"] {
   flex-wrap: wrap;
 }
 
+.prompt-card {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  padding: 0.8rem;
+}
+
+.prompt-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.prompt-card-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.prompt-template {
+  width: 100%;
+  min-height: 220px;
+  margin-top: 0.6rem;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.7rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+/* ── Public board ─────────────────────────────── */
+.public-board {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.public-board.compact {
+  padding: 0.9rem;
+}
+
+.public-board-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.35rem;
+}
+
+.public-board-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.public-board-subtitle {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.public-board-note {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-bottom: 0.8rem;
+}
+
+.public-board-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+}
+
+.public-board-stat {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.public-board-stat span {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.public-board-stat strong {
+  font-size: 1rem;
+}
+
+.public-board-stat.tone-ok strong {
+  color: var(--success);
+}
+
+.public-board-stat.tone-bad strong {
+  color: var(--danger);
+}
+
+.public-board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.public-board-item {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.65rem;
+}
+
+.public-board-item-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.public-board-item-meta {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.public-board-id {
+  color: var(--text-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.public-board-format {
+  font-size: 0.8rem;
+  color: var(--text);
+  background: var(--bg-hover);
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+}
+
+.badge {
+  font-size: 0.74rem;
+  line-height: 1;
+  border-radius: 999px;
+  padding: 0.2rem 0.48rem;
+  border: 1px solid transparent;
+}
+
+.badge-ok {
+  color: #bff0cc;
+  background: rgba(39, 174, 96, 0.2);
+  border-color: rgba(39, 174, 96, 0.5);
+}
+
+.badge-bad {
+  color: #ffc8c1;
+  background: rgba(231, 76, 60, 0.2);
+  border-color: rgba(231, 76, 60, 0.45);
+}
+
+.badge-wait {
+  color: #ffe6a8;
+  background: rgba(243, 156, 18, 0.18);
+  border-color: rgba(243, 156, 18, 0.5);
+}
+
+.badge-run {
+  color: #bfd7ff;
+  background: rgba(91, 141, 239, 0.2);
+  border-color: rgba(91, 141, 239, 0.45);
+}
+
+.danger-text {
+  color: var(--danger);
+}
+
 /* ── PAT ──────────────────────────────────────── */
 .pat-form {
   display: flex;
@@ -420,6 +614,17 @@ hr {
   display: flex;
   padding: 0.4rem 0;
   gap: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+  }
+
+  .public-board-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .profile-row .label {

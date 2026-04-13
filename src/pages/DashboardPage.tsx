@@ -3,6 +3,7 @@ import type { User } from '../api/client';
 import { ConvertSection } from '../components/ConvertSection';
 import { PatSection } from '../components/PatSection';
 import { ProfileSection } from '../components/ProfileSection';
+import { PublicConversionBoard } from '../components/PublicConversionBoard';
 
 interface Props {
   user: User;
@@ -10,7 +11,7 @@ interface Props {
   onUserUpdate: (u: User) => void;
 }
 
-type Tab = 'convert' | 'tokens' | 'profile';
+type Tab = 'convert' | 'tokens' | 'profile' | 'pulse';
 
 export function DashboardPage({ user, onLogout, onUserUpdate }: Props) {
   const [tab, setTab] = useState<Tab>('convert');
@@ -29,6 +30,9 @@ export function DashboardPage({ user, onLogout, onUserUpdate }: Props) {
           <button className={tab === 'profile' ? 'active' : ''} onClick={() => setTab('profile')}>
             Профиль
           </button>
+          <button className={tab === 'pulse' ? 'active' : ''} onClick={() => setTab('pulse')}>
+            Пульс проекта
+          </button>
         </nav>
         <div className="user-info">
           <span>{user.displayName || user.username}</span>
@@ -40,6 +44,7 @@ export function DashboardPage({ user, onLogout, onUserUpdate }: Props) {
         {tab === 'convert' && <ConvertSection />}
         {tab === 'tokens' && <PatSection />}
         {tab === 'profile' && <ProfileSection user={user} onLogout={onLogout} />}
+        {tab === 'pulse' && <PublicConversionBoard />}
       </main>
     </div>
   );

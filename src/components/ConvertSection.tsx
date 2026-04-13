@@ -1,22 +1,31 @@
 import { useState, useRef, useCallback } from 'react';
 import {
-  submitConversion, getJobStatus, downloadResult, createSSE,
-  type JobStatus,
+  submitConversion,
+  getJobStatus,
+  downloadResult,
+  createSSE,
+  type ConversionOutputFormat,
 } from '../api/client';
-
-type OutputFormat = 'DOCX' | 'PDF' | 'BOTH';
+import { GPT_PROMPT_EXTENDED_MD } from '../constants/gptPromptExtendedMd';
 
 export function ConvertSection() {
   const [file, setFile] = useState<File | null>(null);
-  const [format, setFormat] = useState<OutputFormat>('DOCX');
+  const [format, setFormat] = useState<ConversionOutputFormat>('DOCX');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [jobId, setJobId] = useState<string | null>(null);
-  const [jobFormat, setJobFormat] = useState<OutputFormat>('DOCX');
+  const [jobFormat, setJobFormat] = useState<ConversionOutputFormat>('DOCX');
   const [downloadReady, setDownloadReady] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const markdownMode = format === 'MARKDOWN';
+  const inputAccept = markdownMode ? '.docx' : '.zip,.md';
+  const uploadHint = markdownMode
+    ? 'Загрузите исходный .docx (до 50 MB), получите ZIP с Markdown и assets.'
+    : 'Загрузите .zip с .md файлами и картинками (до 50 MB).';
 
   const reset = useCallback(() => {
     setFile(null);
@@ -26,13 +35,35 @@ export function ConvertSection() {
     setError('');
     setWarnings([]);
     setDownloadReady(false);
+    setCopiedPrompt(false);
     setBusy(false);
     if (fileRef.current) fileRef.current.value = '';
+  }, []);
+
+  const copyPromptTemplate = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(GPT_PROMPT_EXTENDED_MD);
+      setCopiedPrompt(true);
+      window.setTimeout(() => setCopiedPrompt(false), 2000);
+    } catch {
+      setError('Не удалось скопировать шаблон в буфер обмена');
+    }
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) return;
+
+    if (markdownMode && !isDocxFile(file.name)) {
+      setError('Для режима DOCX → Markdown нужен файл .docx');
+      return;
+    }
+
+    if (!markdownMode && !isMdSourceFile(file.name)) {
+      setError('Для режима Markdown → DOCX/PDF загрузите .md или .zip');
+      return;
+    }
+
     setBusy(true);
     setError('');
     setStatus('Отправка...');
@@ -122,7 +153,7 @@ export function ConvertSection() {
     setBusy(false);
   }
 
-  async function handleDownload(fmt: string) {
+  async function handleDownload(fmt: 'docx' | 'pdf' | 'zip') {
     if (!jobId) return;
     try {
       const { blob, filename } = await downloadResult(jobId, fmt);
@@ -140,24 +171,25 @@ export function ConvertSection() {
   return (
     <section className="section">
       <h2>Конвертация</h2>
-      <p className="hint">Загрузите <code>.zip</code> с <code>.md</code> файлами и картинками (до 50 MB).</p>
+      <p className="hint">{uploadHint}</p>
 
       <form onSubmit={handleSubmit}>
         <div className="form-row">
           <input
             ref={fileRef}
             type="file"
-            accept=".zip,.md"
+            accept={inputAccept}
             onChange={e => setFile(e.target.files?.[0] || null)}
           />
         </div>
 
         <div className="form-row">
           <label>Формат:</label>
-          <select value={format} onChange={e => setFormat(e.target.value as OutputFormat)}>
+          <select value={format} onChange={e => setFormat(e.target.value as ConversionOutputFormat)}>
             <option value="DOCX">DOCX</option>
             <option value="PDF">PDF</option>
             <option value="BOTH">DOCX + PDF</option>
+            <option value="MARKDOWN">Markdown (ZIP)</option>
           </select>
         </div>
 
@@ -165,6 +197,19 @@ export function ConvertSection() {
           {busy ? 'Конвертация...' : 'Конвертировать'}
         </button>
       </form>
+
+      {!markdownMode && (
+        <div className="prompt-card">
+          <div className="prompt-card-head">
+            <h3>Шаблон запроса к GPT (Extended Markdown)</h3>
+            <button className="btn-secondary" onClick={copyPromptTemplate} type="button">
+              {copiedPrompt ? 'Скопировано' : 'Копировать'}
+            </button>
+          </div>
+          <p className="hint">Используйте шаблон при генерации Markdown перед конвертацией в ГОСТ DOCX/PDF.</p>
+          <textarea className="prompt-template" value={GPT_PROMPT_EXTENDED_MD} readOnly />
+        </div>
+      )}
 
       {status && <div className="status-msg">{status}</div>}
       {error && <div className="error-msg">{error}</div>}
@@ -190,6 +235,11 @@ export function ConvertSection() {
               📑 Скачать PDF
             </button>
           )}
+          {jobFormat === 'MARKDOWN' && (
+            <button className="btn-secondary" onClick={() => handleDownload('zip')}>
+              🗂 Скачать ZIP (Markdown + assets)
+            </button>
+          )}
           <button className="btn-link" onClick={reset}>Новая конвертация</button>
         </div>
       )}
@@ -203,10 +253,20 @@ function statusLabel(s: string, queuePos?: number): string {
     MERGING_MD: '📝 Объединение Markdown...',
     CONVERTING_DOCX: '📄 Конвертация в DOCX...',
     CONVERTING_PDF: '📑 Конвертация в PDF...',
+    CONVERTING_MD: '🧩 Конвертация DOCX в Markdown...',
     COMPLETED: '✅ Готово!',
     FAILED: '❌ Ошибка',
   };
   return map[s] || `🔄 ${s}...`;
+}
+
+function isDocxFile(name: string): boolean {
+  return name.toLowerCase().endsWith('.docx');
+}
+
+function isMdSourceFile(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower.endsWith('.zip') || lower.endsWith('.md');
 }
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }

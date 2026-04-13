@@ -50,6 +50,31 @@ export interface JobStatus {
   warnings?: string[];
 }
 
+export type ConversionOutputFormat = 'DOCX' | 'PDF' | 'BOTH' | 'MARKDOWN';
+
+export interface PublicConversionBoardItem {
+  publicId: string;
+  status: string;
+  outputFormat: string;
+  createdAt: string;
+  completedAt?: string;
+  durationMs?: number;
+  warningCount: number;
+  hasError: boolean;
+}
+
+export interface PublicConversionBoard {
+  generatedAt: string;
+  totalJobs: number;
+  activeJobs: number;
+  completedJobs: number;
+  failedJobs: number;
+  submittedLast24h: number;
+  completedLast24h: number;
+  failedLast24h: number;
+  recent: PublicConversionBoardItem[];
+}
+
 // ── Auth-expired callback ─────────────────────────────────
 
 let onAuthExpiredCallback: (() => void) | null = null;
@@ -330,9 +355,14 @@ export async function unlinkTelegram(): Promise<void> {
 
 // ── Conversion ────────────────────────────────────────────
 
-export async function submitConversion(file: File, outputFormat: string): Promise<{ jobId: string; status: string }> {
+export async function submitConversion(
+  file: File,
+  outputFormat: ConversionOutputFormat,
+): Promise<{ jobId: string; status: string }> {
   const fd = new FormData();
-  fd.append('archive', file);
+  const multipartField = outputFormat === 'MARKDOWN' ? 'file' : 'archive';
+  fd.append(multipartField, file, file.name);
+  fd.append('outputFormat', outputFormat);
   fd.append('options', JSON.stringify({ outputFormat, syntaxHighlighting: true }));
   return request('/api/v1/conversions', { method: 'POST', body: fd });
 }
@@ -343,6 +373,10 @@ export async function getJobStatus(jobId: string): Promise<JobStatus> {
 
 export async function downloadResult(jobId: string, format: string): Promise<{ blob: Blob; filename: string }> {
   return requestBlob(`/api/v1/conversions/${jobId}/result`);
+}
+
+export async function getPublicConversionBoard(limit = 20): Promise<PublicConversionBoard> {
+  return request(`/api/v1/conversions/public/board?limit=${encodeURIComponent(String(limit))}`);
 }
 
 export function createSSE(jobId: string): EventSource {
