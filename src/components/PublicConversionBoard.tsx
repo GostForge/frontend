@@ -5,10 +5,16 @@ import {
 } from '../api/client';
 
 interface Props {
-  compact?: boolean;
+  readonly compact?: boolean;
 }
 
 const REFRESH_MS = 15000;
+
+interface StatProps {
+  readonly title: string;
+  readonly value: number;
+  readonly tone?: 'default' | 'ok' | 'bad';
+}
 
 export function PublicConversionBoard({ compact = false }: Props) {
   const [board, setBoard] = useState<PublicConversionBoard | null>(null);
@@ -17,22 +23,34 @@ export function PublicConversionBoard({ compact = false }: Props) {
 
   const limit = compact ? 8 : 20;
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isActive?: () => boolean) => {
     try {
       const data = await getPublicConversionBoard(limit);
+      if (isActive && !isActive()) return;
       setBoard(data);
       setError('');
     } catch (e: any) {
+      if (isActive && !isActive()) return;
       setError(e?.message || 'Не удалось загрузить пульс проекта');
     } finally {
+      if (isActive && !isActive()) return;
       setLoading(false);
     }
   }, [limit]);
 
   useEffect(() => {
-    load();
-    const timer = window.setInterval(load, REFRESH_MS);
-    return () => window.clearInterval(timer);
+    let active = true;
+    const isActive = () => active;
+
+    void load(isActive);
+    const timer = globalThis.setInterval(() => {
+      void load(isActive);
+    }, REFRESH_MS);
+
+    return () => {
+      active = false;
+      globalThis.clearInterval(timer);
+    };
   }, [load]);
 
   const recentItems = useMemo(() => board?.recent ?? [], [board]);
@@ -112,7 +130,7 @@ export function PublicConversionBoard({ compact = false }: Props) {
   );
 }
 
-function Stat({ title, value, tone = 'default' }: { title: string; value: number; tone?: 'default' | 'ok' | 'bad' }) {
+function Stat({ title, value, tone = 'default' }: StatProps) {
   return (
     <div className={`public-board-stat tone-${tone}`}>
       <span>{title}</span>
