@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   submitConversion,
   getJobStatus,
@@ -20,6 +20,8 @@ export function ConvertSection() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pollRunRef = useRef(0);
+  const copiedPromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const markdownMode = conversionChain === 'DOCX_TO_MD';
   const inputAccept = markdownMode ? '.docx' : '.zip,.md';
@@ -31,6 +33,7 @@ export function ConvertSection() {
     : (markdownMode ? 'Перетащите DOCX-файл сюда' : 'Перетащите MD или ZIP сюда');
 
   const reset = useCallback(() => {
+    pollRunRef.current += 1;
     setFile(null);
     setDragOver(false);
     setJobId(null);
@@ -46,18 +49,39 @@ export function ConvertSection() {
 
   const setSelectedFile = useCallback((candidate: File | null) => {
     if (!candidate) return;
+    const lowerName = candidate.name.toLowerCase();
+    const valid = markdownMode
+      ? lowerName.endsWith('.docx')
+      : lowerName.endsWith('.md') || lowerName.endsWith('.zip');
+    if (!valid) {
+      setFile(null);
+      setError(markdownMode ? 'Нужен файл .docx' : 'Нужен файл .md или .zip');
+      return;
+    }
     setFile(candidate);
     setError('');
-  }, []);
+  }, [markdownMode]);
 
   const copyPromptTemplate = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(GPT_PROMPT_EXTENDED_MD);
       setCopiedPrompt(true);
-      globalThis.setTimeout(() => setCopiedPrompt(false), 2000);
+      if (copiedPromptTimerRef.current) {
+        globalThis.clearTimeout(copiedPromptTimerRef.current);
+      }
+      copiedPromptTimerRef.current = globalThis.setTimeout(() => setCopiedPrompt(false), 2000);
     } catch {
       setError('Не удалось скопировать шаблон в буфер обмена');
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      pollRunRef.current += 1;
+      if (copiedPromptTimerRef.current) {
+        globalThis.clearTimeout(copiedPromptTimerRef.current);
+      }
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -107,19 +131,24 @@ export function ConvertSection() {
   }
 
   function handleDragLeave(e: React.DragEvent<HTMLLabelElement>) {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
     e.preventDefault();
     setDragOver(false);
   }
 
   function pollJob(id: string) {
-    fallbackPoll(id);
+    const runId = ++pollRunRef.current;
+    fallbackPoll(id, runId);
   }
 
-  async function fallbackPoll(id: string) {
+  async function fallbackPoll(id: string, runId: number) {
     for (let i = 0; i < 120; i++) {
+      if (runId !== pollRunRef.current) return;
       await sleep(1500);
+      if (runId !== pollRunRef.current) return;
       try {
         const s = await getJobStatus(id);
+        if (runId !== pollRunRef.current) return;
         setStatus(statusLabel(s.status, s.queuePosition));
         if (s.status === 'COMPLETED') {
           setDownloadReady(true);
@@ -189,6 +218,7 @@ export function ConvertSection() {
               <select
                 id="conversion-chain"
                 value={conversionChain}
+                disabled={busy}
                 onChange={e => setConversionChain(e.target.value as ConversionChain)}
               >
                 <option value="MD_TO_DOCX">Markdown → DOCX</option>
