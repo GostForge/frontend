@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getTelegramLinkCode, unlinkTelegram, type User } from '../api/client';
 
 interface Props {
-  user: User;
-  onUserUpdate: (u: User) => void;
+  readonly user: User;
+  readonly onUserUpdate: (u: User) => void;
 }
 
 export function TelegramSection({ user, onUserUpdate }: Props) {
@@ -11,6 +11,20 @@ export function TelegramSection({ user, onUserUpdate }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const linkCodeExpireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearLinkCodeTimer() {
+    if (linkCodeExpireTimerRef.current) {
+      clearTimeout(linkCodeExpireTimerRef.current);
+      linkCodeExpireTimerRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      clearLinkCodeTimer();
+    };
+  }, []);
 
   async function handleGenerateCode() {
     setLoading(true);
@@ -18,7 +32,12 @@ export function TelegramSection({ user, onUserUpdate }: Props) {
     setSuccess('');
     try {
       const data = await getTelegramLinkCode();
+      clearLinkCodeTimer();
       setLinkCode(data.code);
+      linkCodeExpireTimerRef.current = setTimeout(() => {
+        setLinkCode('');
+        setSuccess('Код привязки истёк. Сгенерируйте новый.');
+      }, 10 * 60 * 1000);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -34,6 +53,7 @@ export function TelegramSection({ user, onUserUpdate }: Props) {
       await unlinkTelegram();
       onUserUpdate({ ...user, telegramLinked: false });
       setSuccess('Telegram отвязан');
+      clearLinkCodeTimer();
       setLinkCode('');
     } catch (err: any) {
       setError(err.message);

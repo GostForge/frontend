@@ -31,7 +31,7 @@ export function App() {
 
   // Force logout when token expires and refresh fails
   useEffect(() => {
-    onAuthExpired(() => setUser(null));
+    return onAuthExpired(() => setUser(null));
   }, []);
 
   // ── Mini App auto-auth on mount ──────────────────────

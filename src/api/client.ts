@@ -79,7 +79,14 @@ export interface PublicConversionBoard {
 
 let onAuthExpiredCallback: (() => void) | null = null;
 
-export function onAuthExpired(cb: () => void) { onAuthExpiredCallback = cb; }
+export function onAuthExpired(cb: () => void): () => void {
+  onAuthExpiredCallback = cb;
+  return () => {
+    if (onAuthExpiredCallback === cb) {
+      onAuthExpiredCallback = null;
+    }
+  };
+}
 
 // ── Getters / setters ─────────────────────────────────────
 
@@ -276,7 +283,11 @@ export async function getJobStatus(jobId: string): Promise<JobStatus> {
 }
 
 export async function downloadResult(jobId: string, format: string): Promise<{ blob: Blob; filename: string }> {
-  return requestBlob(`/api/v1/conversions/${jobId}/result`);
+  const normalizedFormat = format.trim().toLowerCase();
+  if (!['docx', 'pdf', 'zip'].includes(normalizedFormat)) {
+    throw new Error('Unsupported result format');
+  }
+  return requestBlob(`/api/v1/conversions/${jobId}/result?format=${encodeURIComponent(normalizedFormat)}`);
 }
 
 export async function getPublicConversionBoard(limit = 20): Promise<PublicConversionBoard> {
