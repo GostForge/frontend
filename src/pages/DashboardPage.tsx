@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { User } from '../api/client';
+import { getProfile } from '../api/client';
 import { ConvertSection } from '../components/ConvertSection';
 import { PatSection } from '../components/PatSection';
 import { ProfileSection } from '../components/ProfileSection';
@@ -15,6 +16,23 @@ type Tab = 'convert' | 'tokens' | 'profile' | 'pulse';
 
 export function DashboardPage({ user, onLogout, onUserUpdate }: Props) {
   const [tab, setTab] = useState<Tab>('convert');
+
+  // ── Refresh profile when tab regains focus ────────────
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (!document.hidden) {
+        try {
+          const updated = await getProfile();
+          onUserUpdate(updated);
+        } catch {
+          // Silently ignore profile refresh errors
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [onUserUpdate]);
 
   return (
     <div className="dashboard">

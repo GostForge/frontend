@@ -18,7 +18,6 @@ export interface User {
   username: string;
   email: string;
   displayName: string | null;
-  telegramLinked: boolean;
 }
 
 export interface AuthResponse {
@@ -135,7 +134,7 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(url, { ...opts, headers, credentials: 'include' });
 
   if (res.status === 401) {
-    const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/register') || path.includes('/auth/telegram');
+    const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/register');
     if (!isAuthEndpoint) {
       clearAuth();
       if (onAuthExpiredCallback) onAuthExpiredCallback();
@@ -184,14 +183,13 @@ async function buildError(res: Response): Promise<Error> {
 
 export async function register(
   username: string, email: string, password: string,
-  displayName?: string, telegramInitData?: string,
+  displayName?: string,
 ): Promise<AuthResponse> {
   const body = await request<AuthResponse>('/api/v1/auth/register', {
     method: 'POST',
     body: JSON.stringify({
       username, email, password,
       displayName: displayName || null,
-      telegramInitData: telegramInitData || null,
     }),
   });
   setAuth(body);
@@ -200,13 +198,11 @@ export async function register(
 
 export async function login(
   loginStr: string, password: string,
-  telegramInitData?: string,
 ): Promise<AuthResponse> {
   const body = await request<AuthResponse>('/api/v1/auth/login', {
     method: 'POST',
     body: JSON.stringify({
       login: loginStr, password,
-      telegramInitData: telegramInitData || null,
     }),
   });
   setAuth(body);
@@ -215,17 +211,6 @@ export async function login(
 
 export async function logout(): Promise<void> {
   clearAuth();
-}
-
-// ── Mini App Auth ─────────────────────────────────────────
-
-export async function miniAppAuth(initData: string): Promise<AuthResponse> {
-  const body = await request<AuthResponse>('/api/v1/auth/telegram', {
-    method: 'POST',
-    body: JSON.stringify({ initData }),
-  });
-  setAuth(body);
-  return body;
 }
 
 // ── Profile ───────────────────────────────────────────────
@@ -251,17 +236,6 @@ export async function listPats(): Promise<PatResponse[]> {
 
 export async function revokePat(id: string): Promise<void> {
   await request(`/api/v1/users/me/tokens/${id}`, { method: 'DELETE' });
-}
-
-// ── Telegram link ─────────────────────────────────────────
-
-export async function getTelegramLinkCode(): Promise<{ code: string }> {
-  return request('/api/v1/users/me/telegram/link-code');
-}
-
-export async function unlinkTelegram(): Promise<void> {
-  await request('/api/v1/users/me/telegram/unlink', { method: 'POST' });
-  if (currentUser) currentUser.telegramLinked = false;
 }
 
 // ── Conversion ────────────────────────────────────────────

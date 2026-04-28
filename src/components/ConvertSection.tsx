@@ -22,6 +22,7 @@ export function ConvertSection() {
   const fileRef = useRef<HTMLInputElement>(null);
   const pollRunRef = useRef(0);
   const copiedPromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_FILE_SIZE = 52428800; // 50 MB
 
   const markdownMode = conversionChain === 'DOCX_TO_MD';
   const inputAccept = markdownMode ? '.docx' : '.zip,.md';
@@ -31,6 +32,18 @@ export function ConvertSection() {
   const dropZoneTitle = file
     ? file.name
     : (markdownMode ? 'Перетащите DOCX-файл сюда' : 'Перетащите MD или ZIP сюда');
+
+  // ── Restore job from sessionStorage on mount ──────
+  useEffect(() => {
+    const stored = sessionStorage.getItem('gf_job_id');
+    if (stored && stored !== 'undefined') {
+      const [restoredJobId, restoredChain] = stored.split('|');
+      setJobId(restoredJobId);
+      setJobChain(restoredChain as ConversionChain);
+      setStatus('Проверяем статус конвертации...');
+      pollJob(restoredJobId);
+    }
+  }, []);
 
   const reset = useCallback(() => {
     pollRunRef.current += 1;
@@ -45,6 +58,8 @@ export function ConvertSection() {
     setCopiedPrompt(false);
     setBusy(false);
     if (fileRef.current) fileRef.current.value = '';
+    // ── Clear resumed job from sessionStorage ────────────────
+    sessionStorage.removeItem('gf_job_id');
   }, []);
 
   const setSelectedFile = useCallback((candidate: File | null) => {
@@ -58,9 +73,19 @@ export function ConvertSection() {
       setError(markdownMode ? 'Нужен файл .docx' : 'Нужен файл .md или .zip');
       return;
     }
+    if (candidate.size > MAX_FILE_SIZE) {
+      setFile(null);
+      setError(`Файл слишком большой. Максимум 50 MB, у вас ${(candidate.size / 1024 / 1024).toFixed(1)} MB`);
+      return;
+    }
+    if (candidate.size === 0) {
+      setFile(null);
+      setError('Файл пустой');
+      return;
+    }
     setFile(candidate);
     setError('');
-  }, [markdownMode]);
+  }, [markdownMode, MAX_FILE_SIZE]);
 
   const copyPromptTemplate = useCallback(async () => {
     try {
@@ -88,6 +113,13 @@ export function ConvertSection() {
     e.preventDefault();
     if (!file) return;
 
+    // ── Edge case: File was deleted locally ────────────────
+    if (!file.size || file.size > MAX_FILE_SIZE) {
+      setError('Файл недоступен или слишком большой. Выберите файл снова.');
+      setFile(null);
+      return;
+    }
+
     if (markdownMode && !isDocxFile(file.name)) {
       setError('Для режима DOCX → Markdown нужен файл .docx');
       return;
@@ -98,6 +130,7 @@ export function ConvertSection() {
       return;
     }
 
+    // ── Disable mode selector while busy ───────────────────
     setBusy(true);
     setError('');
     setStatus('Отправка...');
@@ -108,6 +141,8 @@ export function ConvertSection() {
       const job = await submitConversion(file, conversionChain);
       setJobId(job.jobId);
       setJobChain(conversionChain);
+      // ── Save job to sessionStorage for resume on page reload ──
+      sessionStorage.setItem('gf_job_id', `${job.jobId}|${conversionChain}`);
       pollJob(job.jobId);
     } catch (err: any) {
       setError(err.message || 'Ошибка отправки');
@@ -154,17 +189,30 @@ export function ConvertSection() {
           setDownloadReady(true);
           setWarnings(s.warnings ?? []);
           setBusy(false);
+          sessionStorage.removeItem('gf_job_id');
           return;
         }
         if (s.status === 'FAILED') {
           setError(`Ошибка: ${s.errorMessage || 'неизвестная'}`);
           setStatus('');
           setBusy(false);
+          sessionStorage.removeItem('gf_job_id');
           return;
         }
-      } catch { /* retry */ }
+      } catch (err: any) {
+        // Handle 404 (job expired) or other errors
+        const errMsg = err.message || '';
+        if (errMsg.includes('404') || errMsg.includes('not found')) {
+          setError('Результат конвертации удален (истек срок хранения 24 часа). Запустите конвертацию заново.');
+          setStatus('');
+          setBusy(false);
+          sessionStorage.removeItem('gf_job_id');
+          return;
+        }
+        // Silently retry on other errors
+      }
     }
-    setError('Превышено время ожидания');
+    setError('Превышено время ожидания (120 сек). Конвертация еще может продолжаться на сервере. Проверьте статус позже.');
     setBusy(false);
   }
 
@@ -172,6 +220,10 @@ export function ConvertSection() {
     if (!jobId) return;
     try {
       const { blob, filename } = await downloadResult(jobId, fmt);
+      if (!blob || blob.size === 0) {
+        setError('Файл результата не найден или пустой. Возможно, результат был удален.');
+        return;
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -179,7 +231,12 @@ export function ConvertSection() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      setError(`Ошибка скачивания: ${err.message}`);
+      const errMsg = err.message || '';
+      if (errMsg.includes('404') || errMsg.includes('not found')) {
+        setError('Результат конвертации удален (истек срок 24 часа). Запустите конвертацию заново.');
+      } else {
+        setError(`Ошибка скачивания: ${err.message}`);
+      }
     }
   }
 

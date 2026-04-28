@@ -43,13 +43,35 @@ export function PublicConversionBoard({ compact = false }: Props) {
     const isActive = () => active;
 
     void load(isActive);
-    const timer = globalThis.setInterval(() => {
+    let timer: ReturnType<typeof globalThis.setInterval> | null = null;
+
+    // ── Pause polling when tab is hidden ──────────────────
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (timer !== null) {
+          globalThis.clearInterval(timer);
+          timer = null;
+        }
+      } else {
+        void load(isActive);
+        timer = globalThis.setInterval(() => {
+          void load(isActive);
+        }, REFRESH_MS);
+      }
+    };
+
+    timer = globalThis.setInterval(() => {
       void load(isActive);
     }, REFRESH_MS);
 
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       active = false;
-      globalThis.clearInterval(timer);
+      if (timer !== null) {
+        globalThis.clearInterval(timer);
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [load]);
 
