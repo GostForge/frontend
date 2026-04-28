@@ -726,7 +726,7 @@ input[type="file"] {
   font-size: 0.8rem;
 }
 
-/* ── Telegram link ────────────────────────────── */
+/* ── Link code ────────────────────────────── */
 .link-code {
   background: var(--bg-hover);
   border-radius: var(--radius);

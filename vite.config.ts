@@ -15,10 +15,6 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       port: 3001,
       allowedHosts,
-      hmr: {
-        protocol: 'wss',
-        clientPort: 443,
-      },
       proxy: {
         '/api': {
           target: 'http://backend:8080',
