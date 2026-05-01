@@ -243,6 +243,13 @@ export async function getProfile(): Promise<User> {
   return user;
 }
 
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await request('/api/v1/users/me/password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
 // ── PAT ───────────────────────────────────────────────────
 
 export async function createPat(name: string, scopes: string): Promise<PatResponse> {
