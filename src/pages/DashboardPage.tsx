@@ -53,7 +53,7 @@ export function DashboardPage({ user, onLogout, onUserUpdate }: Props) {
           </button>
         </nav>
         <div className="user-info">
-          <span>{user.displayName || user.username}</span>
+          <span>{user.username}</span>
           <button className="btn-link" onClick={onLogout}>Выйти</button>
         </div>
       </header>

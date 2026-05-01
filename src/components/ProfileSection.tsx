@@ -19,10 +19,6 @@ export function ProfileSection({ user, onLogout }: Props) {
           <span className="label">Email:</span>
           <span>{user.email}</span>
         </div>
-        <div className="profile-row">
-          <span className="label">Отображаемое имя:</span>
-          <span>{user.displayName || '—'}</span>
-        </div>
       </div>
 
       <button className="btn-danger" onClick={onLogout} style={{ marginTop: '1.5rem' }}>

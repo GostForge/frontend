@@ -10,6 +10,9 @@ export default defineConfig(function (_a) {
         : rawHosts.split(',').map(function (h) { return h.trim(); }).filter(Boolean);
     return {
         plugins: [react()],
+        build: {
+            sourcemap: false,
+        },
         server: {
             host: '0.0.0.0',
             port: 3001,

@@ -17,7 +17,6 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  displayName: string | null;
 }
 
 export interface AuthResponse {
@@ -169,27 +168,50 @@ async function requestBlob(path: string): Promise<{ blob: Blob; filename: string
 }
 
 async function buildError(res: Response): Promise<Error> {
-  let msg: string;
+  let msg: string | null = null;
   try {
     const body = await res.json();
-    msg = body.message || body.error || JSON.stringify(body);
+    if (body && typeof body === 'object') {
+      const maybeMessage = (body as { message?: unknown }).message;
+      const maybeError = (body as { error?: unknown }).error;
+      if (typeof maybeMessage === 'string' && maybeMessage.trim().length > 0) {
+        msg = maybeMessage.trim();
+      } else if (typeof maybeError === 'string' && maybeError.trim().length > 0) {
+        msg = maybeError.trim();
+      }
+    }
   } catch {
-    msg = res.statusText;
+    // non-JSON response, fall back to status text below
   }
-  return new Error(`HTTP ${res.status}: ${msg}`);
+
+  if (!msg) {
+    msg = defaultErrorMessage(res.status, res.statusText);
+  }
+  return new Error(msg);
+}
+
+function defaultErrorMessage(status: number, statusText: string): string {
+  if (status === 400) return 'Некорректный запрос';
+  if (status === 401) return 'Неверный логин или пароль';
+  if (status === 403) return 'Недостаточно прав';
+  if (status === 404) return 'Ресурс не найден';
+  if (status === 409) return 'Конфликт данных';
+  if (status === 413) return 'Файл слишком большой';
+  if (status >= 500) return 'Внутренняя ошибка сервера';
+  return statusText && statusText.trim().length > 0
+    ? statusText
+    : 'Неизвестная ошибка';
 }
 
 // ── Auth API ──────────────────────────────────────────────
 
 export async function register(
   username: string, email: string, password: string,
-  displayName?: string,
 ): Promise<AuthResponse> {
   const body = await request<AuthResponse>('/api/v1/auth/register', {
     method: 'POST',
     body: JSON.stringify({
       username, email, password,
-      displayName: displayName || null,
     }),
   });
   setAuth(body);

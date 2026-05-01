@@ -20,8 +20,8 @@ export function LandingPage({ onAuth, onError }: Props) {
   // Register form
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [passwordReg, setPasswordReg] = useState('');
+  const [confirmPasswordReg, setConfirmPasswordReg] = useState('');
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -41,11 +41,18 @@ export function LandingPage({ onAuth, onError }: Props) {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (!username || !email || !passwordReg) return;
+    if (!username || !email || !passwordReg || !confirmPasswordReg) return;
+    if (passwordReg !== confirmPasswordReg) {
+      const errMsg = 'Пароли не совпадают';
+      setError(errMsg);
+      onError(errMsg);
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const auth = await register(username, email, passwordReg, displayName || undefined);
+      const auth = await register(username, email, passwordReg);
       onAuth(auth);
     } catch (err: any) {
       const errMsg = err.message || 'Ошибка регистрации';
@@ -121,17 +128,17 @@ export function LandingPage({ onAuth, onError }: Props) {
                 disabled={loading}
               />
               <input
-                type="text"
-                placeholder="Отображаемое имя (опционально)"
-                value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
-                disabled={loading}
-              />
-              <input
                 type="password"
                 placeholder="Пароль"
                 value={passwordReg}
                 onChange={e => setPasswordReg(e.target.value)}
+                disabled={loading}
+              />
+              <input
+                type="password"
+                placeholder="Повторите пароль"
+                value={confirmPasswordReg}
+                onChange={e => setConfirmPasswordReg(e.target.value)}
                 disabled={loading}
               />
               <button type="submit" className="btn-primary btn-block" disabled={loading}>
