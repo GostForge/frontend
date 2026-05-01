@@ -48,7 +48,7 @@ export interface JobStatus {
 export type ConversionChain = 'MD_TO_DOCX' | 'MD_TO_DOCX_TO_PDF' | 'DOCX_TO_MD';
 
 export interface PublicConversionBoardItem {
-  publicId: string;
+  userId: string;
   status: string;
   conversionChain: string;
   createdAt: string;

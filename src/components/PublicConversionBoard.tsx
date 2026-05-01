@@ -131,10 +131,10 @@ export function PublicConversionBoard({ compact = false }: Props) {
             )}
 
             {recentItems.map((item) => (
-              <article key={`${item.publicId}-${item.createdAt}`} className="public-board-item">
+              <article key={`${item.userId}-${item.createdAt}`} className="public-board-item">
                 <div className="public-board-item-main">
                   <span className={`badge ${badgeClass(item.status)}`}>{statusLabel(item.status)}</span>
-                  <span className="public-board-id">#{item.publicId}</span>
+                  <span className="public-board-id">#{item.userId}</span>
                   <span className="public-board-format">{chainLabel(item.conversionChain)}</span>
                 </div>
                 <div className="public-board-item-meta">
